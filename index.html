@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fintech Kartica — Full Centered</title>
+<style>
+:root{
+  --bg1:#1e3c72;
+  --bg2:#2a5298;
+  --pattern:repeating-linear-gradient(
+    45deg, rgba(255,255,255,.04) 0 2px, transparent 2px 6px
+  );
+  --text:#fff;
+}
+
+/* BODY + CENTERING */
+body{
+  margin:0;
+  font-family:Segoe UI,sans-serif;
+  background:#ececec;
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+  justify-content:center;
+  align-items:center;
+  position:relative;
+}
+
+/* GREETING */
+.greeting {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 16px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s ease;
+  z-index: 999;
+}
+.greeting.show { opacity: 1; }
+
+/* CENTER CONTAINER */
+.center-container{
+  display:flex;
+  gap:40px;
+  flex-wrap:wrap;
+  justify-content:center;
+  align-items:center;
+}
+
+/* CARD */
+.scene{perspective:1400px}
+.card{
+  width:360px;height:220px;border-radius:18px;
+  transform-style:preserve-3d;
+  position:relative;
+  transition:transform .25s ease, background .6s ease, box-shadow .3s;
+}
+.card.error{box-shadow:0 0 0 3px #ff5252}
+.side{
+  position:absolute;inset:0;border-radius:18px;
+  padding:20px;color:var(--text);
+  backface-visibility:hidden;
+  background:
+    var(--pattern),
+    linear-gradient(135deg,var(--bg1),var(--bg2));
+  overflow:hidden;
+}
+.back{transform:rotateY(180deg)}
+.strip{height:45px;background:#111;margin-top:10px}
+.cvv{background:#fff;color:#000;margin-top:25px;padding:6px;text-align:right}
+
+.number{margin-top:40px;font-size:1.4rem;letter-spacing:3px}
+.bottom{position:absolute;bottom:20px;width:calc(100% - 40px);display:flex;justify-content:space-between;align-items:end}
+.brand svg{height:28px}
+
+/* FORM */
+.form{display:flex;flex-direction:column;gap:8px;min-width:240px}
+input{padding:8px;font-size:14px}
+button{padding:8px;cursor:pointer; margin-top:6px; border-radius:8px; border:none;}
+.save-btn{
+  padding:12px;
+  font-size:15px;
+  border:none;
+  border-radius:10px;
+  background:linear-gradient(135deg,#111,#444);
+  color:#fff;
+  cursor:pointer;
+  transition:.3s;
+}
+.save-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 10px 20px rgba(0,0,0,.25);
+}
+</style>
+</head>
+<body>
+
+<!-- GREETING -->
+<div id="greeting" class="greeting">
+  Dobrodošli u <strong>Vašu Digitalnu Banku</strong>
+</div>
+
+<!-- CENTER CONTAINER -->
+<div class="center-container">
+  <!-- CARD -->
+  <div class="scene">
+    <div class="card" id="card">
+      <div class="side front">
+        <div class="number" id="cardNumber"></div>
+        <div class="bottom">
+          <div id="cardName"></div>
+          <div class="brand" id="cardBrand"></div>
+        </div>
+      </div>
+
+      <div class="side back">
+        <div class="strip"></div>
+        <div class="cvv">CVV: <span id="cardCVV"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div class="form">
+    <input placeholder="Ime i prezime" id="nameInput">
+    <input placeholder="Broj kartice" id="numberInput" inputmode="numeric">
+    <input placeholder="Datum (MM/YY)" id="dateInput" inputmode="numeric">
+    <input placeholder="CVV" id="cvvInput" inputmode="numeric">
+    <button id="toggleMask">👁 Prikaži/Sakrij broj</button>
+    <button id="saveCard" class="save-btn">💾 Sačuvaj karticu kao JPG</button>
+  </div>
+</div>
+
+<!-- html2canvas -->
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script>
+const card=document.getElementById("card");
+const cardNumber=document.getElementById("cardNumber");
+const cardName=document.getElementById("cardName");
+const cardCVV=document.getElementById("cardCVV");
+const cardBrand=document.getElementById("cardBrand");
+const nameInput=document.getElementById("nameInput");
+const numberInput=document.getElementById("numberInput");
+const dateInput=document.getElementById("dateInput");
+const cvvInput=document.getElementById("cvvInput");
+const toggleMask=document.getElementById("toggleMask");
+const saveCard=document.getElementById("saveCard");
+
+/* STATE */
+const cardState={
+  ime:"MAID ČORBIĆ",
+  broj:"",
+  mask:true,
+  datum:"12/26",
+  cvv:"123",
+  brand:"",
+  flip:0,
+  tiltX:0,
+  tiltY:0
+};
+
+/* BRAND THEMES */
+const brandThemes={
+  VISA:{bg1:"#1a1f71", bg2:"#3a47d5", pattern:`repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 2px, transparent 2px 8px)`},
+  MASTERCARD:{bg1:"#000000", bg2:"#434343", pattern:`radial-gradient(circle at 20% 30%, rgba(255,0,0,.15), transparent 40%)`},
+  AMEX:{bg1:"#2e77bb", bg2:"#1b4f72", pattern:`repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 3px, transparent 3px 9px)`},
+  MAESTRO:{bg1:"#232526", bg2:"#414345", pattern:`radial-gradient(circle at 80% 70%, rgba(255,255,255,.06), transparent 40%)`},
+  DEFAULT:{bg1:"#1e3c72", bg2:"#2a5298", pattern:`repeating-linear-gradient(45deg, rgba(255,255,255,.04) 0 2px, transparent 2px 6px)`}
+};
+
+/* SVG LOGOS */
+const logos={
+  VISA:`<svg viewBox="0 0 100 32"><text y="24" font-size="24" fill="white">VISA</text></svg>`,
+  MASTERCARD:`<svg viewBox="0 0 100 32"><circle cx="40" cy="16" r="12" fill="#EB001B"/><circle cx="60" cy="16" r="12" fill="#F79E1B"/></svg>`,
+  AMEX:`<svg viewBox="0 0 100 32"><text y="24" font-size="20" fill="white">AMEX</text></svg>`,
+  MAESTRO:`<svg viewBox="0 0 100 32"><text y="24" font-size="20" fill="white">Maestro</text></svg>`
+};
+
+/* HELPERS */
+function detectBrand(v){
+  if(/^4/.test(v)) return "VISA";
+  if(/^5[1-5]/.test(v)) return "MASTERCARD";
+  if(/^3[47]/.test(v)) return "AMEX";
+  if(/^6/.test(v)) return "MAESTRO";
+  return "DEFAULT";
+}
+function applyTheme(brand){
+  const t=brandThemes[brand]||brandThemes.DEFAULT;
+  document.documentElement.style.setProperty('--bg1',t.bg1);
+  document.documentElement.style.setProperty('--bg2',t.bg2);
+  document.documentElement.style.setProperty('--pattern',t.pattern);
+}
+function formatNumber(v){return v.match(/.{1,4}/g)?.join(" ")||"";}
+function luhn(val){let sum=0,alt=false;for(let i=val.length-1;i>=0;i--){let n=parseInt(val[i]);if(alt){n*=2;if(n>9)n-=9;}sum+=n;alt=!alt;} return sum%10===0;}
+
+/* RENDER */
+function render(){
+  const v=cardState.broj;
+  cardNumber.innerText=
+    cardState.mask && v.length>8 ? v.slice(0,4)+" **** **** "+v.slice(-4) : formatNumber(v);
+  cardName.innerHTML=cardState.ime+"<br>"+cardState.datum;
+  cardCVV.innerText=cardState.cvv;
+  cardBrand.innerHTML=logos[cardState.brand]||"";
+  card.style.transform=`rotateY(${cardState.flip}deg) rotateX(${cardState.tiltY}deg) rotateY(${cardState.tiltX}deg)`;
+  card.classList.toggle("error", v.length>=13 && !luhn(v));
+}
+
+/* EVENTS */
+card.addEventListener("click",()=>{cardState.flip=cardState.flip?0:180; render();});
+card.addEventListener("mousemove",e=>{
+  const r=card.getBoundingClientRect();
+  cardState.tiltX=(e.clientX-r.left-r.width/2)/18;
+  cardState.tiltY=-(e.clientY-r.top-r.height/2)/18;
+  render();
+});
+card.addEventListener("mouseleave",()=>{cardState.tiltX=0;cardState.tiltY=0;render();});
+
+nameInput.oninput=e=>{cardState.ime=e.target.value;render();};
+numberInput.oninput=e=>{
+  const raw=e.target.value.replace(/\D/g,'');
+  e.target.value=raw.match(/.{1,4}/g)?.join(" ")||"";
+  cardState.broj=raw;
+  const brand=detectBrand(raw);
+  cardState.brand=brand;
+  applyTheme(brand);
+  render();
+};
+dateInput.oninput=e=>{
+  let v=e.target.value.replace(/\D/g,'').slice(0,4);
+  if(v.length>=3) v=v.slice(0,2)+"/"+v.slice(2);
+  e.target.value=v;
+  cardState.datum=v;
+  render();
+};
+cvvInput.onfocus=()=>{cardState.flip=180;render();}
+numberInput.onfocus=()=>{cardState.flip=0;render();}
+cvvInput.oninput=e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,4); cardState.cvv=e.target.value; render();};
+toggleMask.onclick=()=>{cardState.mask=!cardState.mask; render();};
+
+/* SAVE JPG */
+saveCard.onclick=()=>{
+  html2canvas(card,{scale:3,useCORS:true,backgroundColor:null}).then(canvas=>{
+    const link=document.createElement("a");
+    link.download="moja-kartica.jpg";
+    link.href=canvas.toDataURL("image/jpeg",0.95);
+    link.click();
+  });
+};
+
+/* GREETING */
+window.addEventListener("load",()=>{
+  const greet=document.getElementById("greeting");
+  greet.classList.add("show");
+  setTimeout(()=>{greet.classList.remove("show");},3000);
+});
+
+render();
+</script>
+</body>
+</html>
+
