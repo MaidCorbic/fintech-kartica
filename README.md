@@ -1,4 +1,4 @@
-# Fintech Kartica — Interaktivni Demo
+# Fintech Kartica - Interaktivni Demo
 
 **Interaktivna digitalna kartica u HTML, CSS i JavaScriptu sa realističnim 3D efektima, automatskom promjenom boja po brendu kartice, flip animacijom za CVV, maskiranjem broja i mogućnošću preuzimanja kartice kao JPG. 
 Idealan demo za fintech projekte, UI/UX eksperiment ili edukativni prikaz modernih web tehnologija.**
@@ -19,7 +19,7 @@ Idealan demo za fintech projekte, UI/UX eksperiment ili edukativni prikaz modern
 
 ## 💻 Kako koristiti
 
-1. Otvori [Live demo](https://USERNAME.github.io/fintech-kartica/)  
+1. Otvori [Live demo](https://maidcorbic.github.io/fintech-kartica/)  
 2. Unesi ime i prezime  
 3. Unesi broj kartice (automatski prepoznaje brend i mijenja boje)  
 4. Unesi datum i CVV  
